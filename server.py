@@ -12,6 +12,7 @@ df_NIFTY_CE250500_31072025 = pd.read_csv('option_data.csv')
 
 # Ensure rows stream oldest to newest
 df_NIFTY_CE250500_31072025['DATE '] = pd.to_datetime(df_NIFTY_CE250500_31072025['DATE '], format='%d-%b-%Y')
+df_NIFTY_CE250500_31072025['EXPIRY DATE '] = pd.to_datetime(df_NIFTY_CE250500_31072025['EXPIRY DATE '], format='%d-%b-%Y')
 df_NIFTY_CE250500_31072025['SYMBOL '] = "NIFTY_CE250500_31072025"
 df_NIFTY_CE250500_31072025 = df_NIFTY_CE250500_31072025.sort_values(by='DATE ')
 
@@ -34,7 +35,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
             data = row.to_dict()
 
             # Replace 'DATE' with the current timestamp
-            data['DATE '] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            data['REC DATE '] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            data['DATE '] = data['DATE '].strftime('%Y-%m-%d')
+            data['EXPIRY DATE '] = data['EXPIRY DATE '].strftime('%Y-%m-%d')
 
             # Convert to JSON string and send
             message = json.dumps(data) + '\n'

@@ -3,58 +3,32 @@ from collections import deque
 import time
 
 class PositionsManager:
-    """
-    Manages trading positions, market prices, and a trade log across multiple processes.
-    Uses multiprocessing.Manager for shared data structures.
-    """
 
-    def __init__(self, manager=None):
-        """
-        Initializes the PositionsManager.
-        
-        Args:
-            manager (multiprocessing.Manager, optional): An existing Manager instance.
-                                                         If None, a new one is created.
-        """
+    def __init__(self, manager=None, shared_positions=None, shared_prices=None, 
+                 shared_trade_log=None, shared_realized_pnl=None, shared_pnl_lock=None):
+        """Initializes the PositionsManager."""
+
         if manager is None:
             manager = Manager()
         
-        # Shared dictionaries for positions and prices
-        # positions: { identifier: deque of position_info_dicts }
-        self.positions = manager.dict()  
-        # prices: { identifier: current market price }
-        self.prices = manager.dict()     
-        
-        # Shared list for the trade log (Manager handles list appends atomically)
-        self.trade_log = manager.list()  
-        
-        # Shared value for total realized PnL, protected by a lock
-        self.realized_pnl = manager.Value('d', 0.0) # 'd' for double (float)
-        self._pnl_lock = manager.Lock() # Lock to ensure atomic updates to realized_pnl
+        # Use provided shared objects or create new ones
+        self.positions = shared_positions if shared_positions is not None else manager.dict()
+        self.prices = shared_prices if shared_prices is not None else manager.dict()
+        self.trade_log = shared_trade_log if shared_trade_log is not None else manager.list()
+        self.realized_pnl = shared_realized_pnl if shared_realized_pnl is not None else manager.Value('d', 0.0)
+        self._pnl_lock = shared_pnl_lock if shared_pnl_lock is not None else manager.Lock()
 
-    def update_market_price(self, identifier: str, price: float):
+    def update_market_price(self, identifier: str, price: float, name:str = None):
         """
         Updates the current market price for an identifier and triggers auto-closing
         of positions for that identifier.
-
-        Args:
-            identifier (str): The symbol or unique identifier of the asset.
-            price (float): The current market price of the asset.
         """
         self.prices[identifier] = price
         self._auto_close_positions(identifier)
 
     def update_position(self, identifier: str, signal: str, price: float, target: float, stop_loss: float):
-        """
-        Opens a new position (long or short) for a given identifier.
+        """Opens a new position (long or short) for a given identifier."""
 
-        Args:
-            identifier (str): The symbol or unique identifier of the asset.
-            signal (str): "BUY" for a long position, "SELL" for a short position.
-            price (float): The entry price of the position.
-            target (float): The target price for the position.
-            stop_loss (float): The stop-loss price for the position.
-        """
         # Retrieve the deque, convert to a list for local modification.
         # Use .get() with a default deque() to handle new identifiers gracefully.
         current_positions_list = list(self.positions.get(identifier, deque()))
@@ -76,13 +50,8 @@ class PositionsManager:
         print(f"[OPEN] {identifier} {side} entered at {price:.2f} (Target: {target:.2f}, Stop: {stop_loss:.2f})")
 
     def _auto_close_positions(self, identifier: str):
-        """
-        Automatically closes positions based on current market price hitting target or stop-loss.
-        This method is called internally by update_market_price.
+        """Automatically closes positions based on current market price hitting target or stop-loss."""
         
-        Args:
-            identifier (str): The symbol or unique identifier of the asset.
-        """
         if identifier not in self.positions or identifier not in self.prices:
             return
 
@@ -153,17 +122,6 @@ class PositionsManager:
             print(f"[CLOSE] {closed['identifier']} {closed['side']} exited at {closed['exit']:.2f} (entry: {closed['entry']:.2f}, PnL: {closed['pnl']:.2f})")
 
     def _calculate_pnl(self, side: str, entry: float, exit: float) -> float:
-        """
-        Calculates the Profit and Loss for a single trade.
-
-        Args:
-            side (str): "LONG" or "SHORT".
-            entry (float): Entry price.
-            exit (float): Exit price.
-
-        Returns:
-            float: The calculated PnL.
-        """
         if side == "LONG":
             return exit - entry
         elif side == "SHORT":
@@ -171,19 +129,7 @@ class PositionsManager:
         return 0.0
 
     def get_trade_log(self) -> list:
-        """
-        Retrieves a copy of the complete trade log.
-
-        Returns:
-            list: A list of dictionaries, where each dictionary represents a closed trade.
-        """
         return list(self.trade_log) # Return a copy
 
     def get_realized_pnl(self) -> float:
-        """
-        Retrieves the total realized Profit and Loss across all trades.
-
-        Returns:
-            float: The aggregate realized PnL.
-        """
         return self.realized_pnl.value # Access the shared value via .value
