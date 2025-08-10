@@ -29,7 +29,8 @@ algo-trade-sim/
 
 Below is a high-level overview of how the system works:
 
-![Algo-Trade Flowchart](A_flowchart_diagram_illustrates_an_algorithmic_tra.png)
+<img width="1024" height="1536" alt="image" src="https://github.com/user-attachments/assets/c033cbe1-108f-4480-9062-b83c02708ce2" />
+
 
 ## How It Works
 
