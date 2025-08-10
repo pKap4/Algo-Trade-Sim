@@ -59,6 +59,19 @@ sequenceDiagram
     C->>P: Final PnL report
 ```
 
+## Component Interaction
+
+```mermaid
+graph TD
+    A[Server - server.py] -->|Streams Data| B[Client - client.py]
+    B -->|Passes Prices| C[Bollinger Strategy]
+    B -->|Passes Prices| D[Volume Fade Strategy]
+    C -->|Trade Signals| E[Positions Manager]
+    D -->|Trade Signals| E
+    E -->|Manages Targets & SL| B
+    E -->|PnL Reports| B
+```
+
 ## How It Works
 
 1. **Server (`server.py`)** streams option price data from a CSV file over a TCP socket.
