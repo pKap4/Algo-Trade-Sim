@@ -31,6 +31,46 @@ Below is a high-level overview of how the system works:
 
 <img width="1024" height="1536" alt="image" src="https://github.com/user-attachments/assets/c033cbe1-108f-4480-9062-b83c02708ce2" />
 
+sequenceDiagram
+    participant S as Server (server.py)
+    participant C as Client (client.py)
+    participant B as Bollinger Strategy
+    participant V as Volume Fade Strategy
+    participant P as Positions Manager
+
+    S->>S: Load CSV data
+    S->>C: Establish TCP connection
+    loop For each tick
+        S->>C: Send JSON tick
+        C->>B: process(price) (if Bollinger selected)
+        C->>V: process(data...) (if Volume Fade selected)
+        alt Strategy returns signal
+            C->>P: Open position with target & stop-loss
+        end
+        P->>P: Check if target/stop-loss hit
+        alt Exit condition met
+            P->>C: Notify exit & PnL
+        end
+    end
+    S->>C: Send EOD signal
+    C->>P: Final PnL report
+
+graph TD
+    subgraph Server Side
+        S[server.py] -->|TCP stream| Net[Socket Connection]
+    end
+
+    subgraph Client Side
+        Net --> C[client.py]
+        C -->|Signal Generation| STR[Strategies]
+        STR --> B[Bollinger Mean Reversion]
+        STR --> V[Volume Fade]
+        C --> P[Positions Manager]
+    end
+
+    P -->|Trade lifecycle| C
+
+
 
 ## How It Works
 
