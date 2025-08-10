@@ -57,6 +57,7 @@ sequenceDiagram
     end
     S->>C: Send EOD signal
     C->>P: Final PnL report
+```
 
 ## How It Works
 
