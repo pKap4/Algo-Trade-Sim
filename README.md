@@ -31,6 +31,8 @@ Below is a high-level overview of how the system works:
 
 <img width="1024" height="1536" alt="image" src="https://github.com/user-attachments/assets/c033cbe1-108f-4480-9062-b83c02708ce2" />
 
+## Sequence Diagram
+
 ```mermaid
 sequenceDiagram
     participant S as Server (server.py)
@@ -55,23 +57,6 @@ sequenceDiagram
     end
     S->>C: Send EOD signal
     C->>P: Final PnL report
-
-graph TD
-    subgraph Server Side
-        S[server.py] -->|TCP stream| Net[Socket Connection]
-    end
-
-    subgraph Client Side
-        Net --> C[client.py]
-        C -->|Signal Generation| STR[Strategies]
-        STR --> B[Bollinger Mean Reversion]
-        STR --> V[Volume Fade]
-        C --> P[Positions Manager]
-    end
-
-    P -->|Trade lifecycle| C
-
-
 
 ## How It Works
 
